@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby1.9.1
+
+require 'rubygems'
+require 'yaml'
+require 'gmail'
+require 'pry'
+
+config = YAML.load(File.read('config.yaml'))
+
+gmail = Gmail.new config['gmail']['user'],
+                  config['gmail']['pass']
+
+
+def play sound
+  `play #{sound}`
+end
+
+def event name
+  puts name
+  sound =
+    case name
+    when :finished
+      'sounds/completed.wav'
+    when :begun
+      'sounds/begun.wav'
+    end
+  play sound
+end
+
+gmail.inbox.emails(:unread).each do |mail|
+  mail.mark :read
+  
+  body = mail.message.body
+  case body.to_s
+  when /Execution terminated/i
+    event :finished
+  when /Begun execution/i
+    event :begun
+  else
+    puts "???"
+  end
+end
